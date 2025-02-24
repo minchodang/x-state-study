@@ -1,7 +1,10 @@
-import { createMachine } from 'xstate';
+import { assign, createMachine } from 'xstate';
 
 export const cartMachine = createMachine(
     {
+        types: {
+            events: {} as { type: 'ADD_ITEM'; value: string } | { type: 'RESET' },
+        },
         id: 'cart',
         initial: 'empty',
         states: {
@@ -13,18 +16,38 @@ export const cartMachine = createMachine(
                     },
                 },
             },
-            hold: {},
+            hold: {
+                on: {
+                    ADD_ITEM: {
+                        actions: ['addItem'],
+                    },
+                    RESET: {
+                        target: 'empty',
+                        actions: ['resetItems'],
+                    },
+                },
+            },
         },
         context: {
-            items: [],
+            items: [] as string[],
+        },
+        schemas: {
+            events: { type: 'ICartEventTypes' },
         },
     },
     {
         actions: {
-            addItem: ({ context, event, self }, params) => {
-                context.items.push(params?.item);
-                console.log(context.items);
-            },
+            addItem: assign({
+                items: ({ context, event }) => {
+                    if (event.type === 'ADD_ITEM') {
+                        return [...context.items, event.value];
+                    }
+                    return context.items;
+                },
+            }),
+            resetItems: assign({
+                items: [],
+            }),
         },
     }
 );
